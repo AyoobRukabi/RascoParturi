@@ -9,13 +9,13 @@ export default function Privacy() {
   const q = useCatalog();
   const list = (k: string) => t(k, { returnObjects: true }) as unknown as string[];
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="mb-6 text-5xl font-bold">{t("privacy.title")}</h1>
+    <div className="container-x max-w-3xl section-y !pt-14">
+      <h1 className="t-h2 mb-8">{t("privacy.title")}</h1>
       <Query q={q}>{(d) => {
         const s = d.settings; const ph = t("privacy.notSet");
         const confirmed = Boolean(s.legal_name && s.business_id);
         return (
-          <div className="space-y-6 text-muted [&_h2]:mb-2 [&_h2]:text-3xl [&_h2]:text-fg [&_li]:ml-5 [&_li]:list-disc">
+          <div className="space-y-6 text-muted [&_h2]:mb-2 [&_h2]:text-3xl [&_h2]:normal-case [&_h2]:text-fg [&_li]:ml-5 [&_li]:list-disc">
             {!confirmed && <Notice tone="warn">{t("privacy.draftNotice")}</Notice>}
             <section><h2>{t("privacy.controller")}</h2>
               <p>{t("privacy.controllerText")} <strong className="text-fg">{s.legal_name ?? ph}</strong>. {t("privacy.businessId")}: <strong className="text-fg">{s.business_id ?? ph}</strong>.</p>

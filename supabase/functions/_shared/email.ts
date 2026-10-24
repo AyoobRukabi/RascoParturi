@@ -24,7 +24,7 @@ const T = {
   fi: {
     confirmed: "Varauksesi on vahvistettu", rescheduled: "Varauksesi aikaa on muutettu", cancelled: "Varauksesi on peruttu",
     reminder: "Muistutus tulevasta ajastasi", hello: (n: string) => `Hei ${n},`,
-    when: "Aika", barber: "Parturi", services: "Palvelut", price: "Hinta (maksetaan paikan päällä)", oldTime: "Aiempi aika",
+    when: "Aika", barber: "Parturi", services: "Palvelut", price: "Hinta", oldTime: "Aiempi aika",
     manage: "Hallinnoi varaustasi (peruuta tai vaihda aikaa)", manageHelp: "Voit peruuttaa tai siirtää aikaasi tämän henkilökohtaisen linkin kautta. Älä jaa linkkiä muille.",
     deadline: (h: number) => h === 0 ? "Peruutus on mahdollista varauksen alkamiseen asti." : `Peruutus on mahdollista viimeistään ${h} h ennen varattua aikaa.`,
     cancelledByShop: "Valitettavasti jouduimme perumaan varauksesi. Ota yhteyttä, jos haluat varata uuden ajan.",
@@ -35,7 +35,7 @@ const T = {
   en: {
     confirmed: "Your booking is confirmed", rescheduled: "Your booking has been rescheduled", cancelled: "Your booking has been cancelled",
     reminder: "Reminder of your upcoming appointment", hello: (n: string) => `Hi ${n},`,
-    when: "Time", barber: "Barber", services: "Services", price: "Price (paid at the shop)", oldTime: "Previous time",
+    when: "Time", barber: "Barber", services: "Services", price: "Price", oldTime: "Previous time",
     manage: "Manage your booking (cancel or reschedule)", manageHelp: "You can cancel or move your appointment with this personal link. Please do not share it.",
     deadline: (h: number) => h === 0 ? "You can cancel up to the start of the appointment." : `You can cancel up to ${h} h before the appointment.`,
     cancelledByShop: "Unfortunately we had to cancel your booking. Please get in touch if you would like to book a new time.",

@@ -1,95 +1,130 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { MapPin, Phone } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ServiceList } from "@/components/ServiceList";
+import { Gallery } from "@/components/Gallery";
 import { OpeningHours } from "@/components/OpeningHours";
+import { Photo, useImageAvailable } from "@/components/Photo";
+import { PoleIllustration, PoleRibbon } from "@/components/Pole";
+import { Reveal } from "@/components/Reveal";
+import { Reviews } from "@/components/Reviews";
+import { ServiceList, ServiceListSkeleton } from "@/components/ServiceList";
+import { SocialLinks } from "@/components/Social";
+import { Button } from "@/components/ui/button";
 import { useCatalog } from "@/hooks/useCatalog";
+import { appleMapsUrl, directionsUrl, isOpenNow } from "@/lib/catalog";
+import { AppLink, usePreview } from "@/lib/preview";
+import { trimTime } from "@/lib/time";
 
-interface GalleryItem { src: string; alt?: string }
-
-// Gallery photos are real files supplied by the owner (public/gallery + manifest.json). Hidden when none exist.
-function Gallery() {
+function Hero() {
   const { t } = useTranslation();
-  const [items, setItems] = useState<GalleryItem[]>([]);
-  const [lightbox, setLightbox] = useState<GalleryItem | null>(null);
-  useEffect(() => {
-    fetch("/gallery/manifest.json").then((r) => (r.ok ? r.json() : [])).then((j) => Array.isArray(j) && setItems(j)).catch(() => undefined);
-  }, []);
-  if (items.length === 0) return null;
+  const { data } = useCatalog();
+  const preview = usePreview();
+  const photo = useImageAvailable("/brand/hero.jpg");
+  const s = data?.settings;
+  const todayWd = data ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(new Intl.DateTimeFormat("en-GB", { timeZone: data.settings.timezone, weekday: "short" }).format(new Date())) : -1;
+  const today = data?.opening_hours.find((h) => h.weekday === todayWd);
+  const open = data ? isOpenNow(data.opening_hours, data.settings.timezone) : false;
   return (
-    <section className="mx-auto max-w-6xl px-4 py-14" aria-labelledby="gallery-h">
-      <h2 id="gallery-h" className="mb-6 text-4xl font-bold">{t("home.galleryTitle")}</h2>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {items.map((g) => (
-          <button key={g.src} onClick={() => setLightbox(g)} className="aspect-[4/5] overflow-hidden rounded-2xl border border-line">
-            <img src={g.src} alt={g.alt ?? ""} loading="lazy" className="size-full object-cover transition-transform hover:scale-105" />
-          </button>
-        ))}
-      </div>
-      {lightbox && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={() => setLightbox(null)} role="dialog" aria-modal="true">
-          <img src={lightbox.src} alt={lightbox.alt ?? ""} className="max-h-full max-w-full rounded-xl" />
+    <section className="relative overflow-hidden">
+      <div className="container-x grid gap-10 pb-16 pt-12 sm:pt-16 lg:grid-cols-12 lg:gap-8 lg:pb-24 lg:pt-20">
+        <div className="lg:col-span-7 lg:pt-6">
+          <p className="eyebrow rise mb-6" style={{ "--d": "0ms" } as React.CSSProperties}>{t("home.eyebrow")}</p>
+          <h1 className="t-hero rise" style={{ "--d": "80ms" } as React.CSSProperties}>
+            {t("home.line1")}
+            <span className="t-serif mt-1 block text-[0.78em] leading-[0.95] text-brand-hover">{t("home.line2")}</span>
+          </h1>
+          <p className="t-lead rise mt-8 max-w-xl" style={{ "--d": "200ms" } as React.CSSProperties}>{t("home.lead")}</p>
+          <div className="rise mt-10 flex flex-wrap items-center gap-x-8 gap-y-4" style={{ "--d": "300ms" } as React.CSSProperties}>
+            <Button asChild size="lg"><AppLink to="/book">{t("home.bookCta")} <ArrowRight className="size-5 transition-transform group-hover/btn:translate-x-1" /></AppLink></Button>
+            <AppLink to="/services" className="font-display text-[1.1rem] font-semibold uppercase tracking-[0.14em] text-fg underline decoration-line-strong decoration-2 underline-offset-[10px] transition-colors hover:decoration-brand">{t("home.viewServices")}</AppLink>
+          </div>
+          <dl className="rise mt-14 grid max-w-xl grid-cols-2 gap-6 border-t border-line pt-6 text-sm" style={{ "--d": "400ms" } as React.CSSProperties}>
+            <div><dt className="eyebrow mb-1.5 !text-muted">{t("home.today")}</dt><dd className="flex items-center gap-2 text-lg"><span aria-hidden className={`size-2 rounded-full ${open ? "bg-success" : "bg-line-strong"}`} />{today?.open && today.close ? `${trimTime(today.open)} – ${trimTime(today.close)}` : t("home.closedDay")}</dd></div>
+            {s?.address && <div><dt className="eyebrow mb-1.5 !text-muted">{t("footer.visit")}</dt><dd className="text-lg">{s.address.split(",")[0]}</dd></div>}
+          </dl>
         </div>
-      )}
+
+        <div className="rise lg:col-span-5" style={{ "--d": "250ms" } as React.CSSProperties}>
+          {photo ? (
+            <Photo src="/brand/hero.jpg" alt={t("brand.name")} label="hero" className="aspect-[4/5] w-full" />
+          ) : (
+            <div className="relative grid aspect-[4/5] w-full place-items-center overflow-hidden border border-line bg-surface" aria-hidden>
+              <PoleIllustration className="h-[86%] w-auto drop-shadow-[0_30px_60px_rgba(0,0,0,.6)]" />
+              <span className="absolute bottom-4 left-4 font-display text-xs font-semibold uppercase tracking-[0.3em] text-muted [writing-mode:vertical-rl] rotate-180">Helsinki · Helsinginkatu 4 b</span>
+              {preview && <span className="absolute right-3 top-3 border border-dashed border-line-strong bg-bg/80 px-2 py-1 font-display text-xs uppercase tracking-[0.18em] text-muted">Hero photo slot · /brand/hero.jpg · 4:5</span>}
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
 
 export default function Home() {
   const { t } = useTranslation();
-  const { data } = useCatalog();
+  const q = useCatalog();
+  const data = q.data;
   const s = data?.settings;
+  const pillars = t("home.pillars", { returnObjects: true }) as unknown as string[];
   return (
     <>
-      <section className="pole-stripes relative overflow-hidden border-b border-line">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
-          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-brand-hover">{t("brand.tagline")}</p>
-          <h1 className="max-w-3xl text-5xl font-bold leading-[1.02] sm:text-7xl">{t("home.heroTitle")}</h1>
-          <p className="mt-6 max-w-xl text-lg text-muted">{t("home.heroText")}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg"><Link to="/book">{t("home.bookCta")}</Link></Button>
-            <Button asChild size="lg" variant="outline"><Link to="/services">{t("home.viewServices")}</Link></Button>
-          </div>
-          <ul className="mt-8 flex flex-wrap gap-2">
-            {(t("home.chips", { returnObjects: true }) as unknown as string[]).map((c) => (
-              <li key={c} className="rounded-full border border-line bg-bg/70 px-4 py-1.5 text-sm text-muted">{c}</li>
+      <Hero />
+
+      {/* Introduction — the owner's own description from the existing site */}
+      <section className="border-y border-line bg-surface section-y" aria-labelledby="intro-h">
+        <div className="container-x grid gap-12 lg:grid-cols-12">
+          <Reveal className="lg:col-span-8"><p className="eyebrow mb-5">{t("home.introEyebrow")}</p>
+            <h2 id="intro-h" className="t-serif text-[clamp(2rem,4.6vw,3.6rem)] leading-[1.12] normal-case">{t("home.introText")}</h2></Reveal>
+          <ul className="grid gap-0 border-t border-line lg:col-span-4 lg:border-t-0">
+            {pillars.map((p, i) => (
+              <Reveal as="li" key={p} delay={i * 80} className="flex items-baseline gap-5 border-b border-line py-5 lg:first:pt-0">
+                <span className="font-display text-xl font-semibold text-brand-hover">0{i + 1}</span><span className="font-display text-2xl font-semibold uppercase tracking-wide">{p}</span>
+              </Reveal>
             ))}
+            <li className="pt-6"><AppLink to="/about" className="inline-flex items-center gap-1.5 font-display text-[1.05rem] font-semibold uppercase tracking-[0.14em] text-brand-hover hover:text-fg">{t("home.more")} <ArrowUpRight className="size-4" /></AppLink></li>
           </ul>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-14" aria-labelledby="services-h">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div><h2 id="services-h" className="text-4xl font-bold">{t("home.servicesTitle")}</h2><p className="mt-1 text-muted">{t("home.servicesLead")}</p></div>
-          <Link to="/services" className="hidden text-sm font-semibold text-brand-hover hover:underline sm:block">{t("home.allServices")} →</Link>
+      {/* Featured services */}
+      <section className="section-y" aria-labelledby="services-h">
+        <div className="container-x grid gap-10 lg:grid-cols-12 lg:gap-16">
+          <Reveal className="lg:col-span-4"><div className="lg:sticky lg:top-32">
+            <p className="eyebrow mb-4">{t("home.featuredEyebrow")}</p><h2 id="services-h" className="t-h2">{t("home.servicesTitle")}</h2>
+            <p className="t-lead mt-5">{t("home.servicesLead")}</p>
+            <div className="mt-8 flex flex-wrap items-center gap-6"><Button asChild><AppLink to="/book">{t("home.bookCta")}</AppLink></Button>
+              <AppLink to="/services" className="font-display text-[1.05rem] font-semibold uppercase tracking-[0.14em] text-muted hover:text-fg">{t("home.allServices")} →</AppLink></div>
+          </div></Reveal>
+          <div className="lg:col-span-8">{q.isLoading ? <ServiceListSkeleton /> : <ServiceList services={data?.services ?? []} limit={6} showDuration={false} />}</div>
         </div>
-        <ServiceList services={data?.services ?? []} limit={6} />
-        <div className="mt-6"><Button asChild><Link to="/book">{t("home.bookCta")}</Link></Button></div>
       </section>
 
       <Gallery />
+      <Reviews />
 
-      <section className="border-t border-line bg-surface" aria-labelledby="visit-h">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 md:grid-cols-2">
-          <div>
-            <h2 id="visit-h" className="mb-4 text-4xl font-bold">{t("home.hoursTitle")}</h2>
-            {data && <OpeningHours hours={data.opening_hours} tz={data.settings.timezone} />}
-          </div>
-          <Card className="self-start bg-bg">
-            <h2 className="mb-4 text-3xl font-bold">{t("home.findUs")}</h2>
-            {s?.address && (
-              <p className="flex items-start gap-3"><MapPin className="mt-1 size-5 shrink-0 text-brand-hover" /><span>{s.address}</span></p>
-            )}
-            {s?.phone && <p className="mt-3 flex items-center gap-3"><Phone className="size-5 text-brand-hover" /><a className="hover:underline" href={`tel:${s.phone}`}>{s.phone}</a></p>}
-            {s?.address && (
-              <Button asChild variant="outline" className="mt-5">
-                <a href={s.google_maps_url ?? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`} target="_blank" rel="noreferrer">{t("contact.openMap")}</a>
-              </Button>
-            )}
-          </Card>
+      {/* Visit */}
+      <section className="section-y" aria-labelledby="visit-h">
+        <div className="container-x grid gap-14 lg:grid-cols-12 lg:gap-20">
+          <Reveal className="lg:col-span-6"><p className="eyebrow mb-4">{t("home.visitEyebrow")}</p><h2 id="visit-h" className="t-h2 mb-8">{t("home.hoursTitle")}</h2>
+            {data && <OpeningHours hours={data.opening_hours} tz={data.settings.timezone} />}</Reveal>
+          <Reveal delay={100} className="lg:col-span-6"><p className="eyebrow mb-4">{t("home.findUs")}</p>
+            {s?.address && (<>
+              <p className="font-display text-[clamp(2rem,5vw,3.4rem)] font-bold uppercase leading-[0.95]">{s.address.split(",")[0]}<span className="block text-muted">{s.address.split(",").slice(1).join(",").trim()}</span></p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild variant="light"><a href={directionsUrl(s.address, s.google_maps_url)} target="_blank" rel="noreferrer">{t("contact.directions")} <ArrowUpRight className="size-4" /></a></Button>
+                <Button asChild variant="outline"><a href={appleMapsUrl(s.address)} target="_blank" rel="noreferrer">Apple Maps</a></Button>
+              </div></>)}
+            {s?.phone && <p className="mt-8"><a className="inline-flex items-center gap-3 text-xl underline-offset-4 hover:underline" href={`tel:${s.phone}`}><Phone className="size-5 text-brand-hover" />{s.phone}</a></p>}
+            {s && <SocialLinks s={s} className="mt-8" />}
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Closing call to action */}
+      <section className="relative overflow-hidden border-t border-line bg-surface">
+        <PoleRibbon animated />
+        <div className="container-x flex flex-col items-start justify-between gap-8 py-16 sm:py-24 lg:flex-row lg:items-end">
+          <Reveal><h2 className="t-h2 max-w-3xl">{t("home.ctaTitle")}<span className="t-serif block text-[0.8em] text-brand-hover">{t("home.ctaTitle2")}</span></h2></Reveal>
+          <Reveal delay={100}><Button asChild size="lg"><AppLink to="/book">{t("home.bookCta")} <ArrowRight className="size-5 transition-transform group-hover/btn:translate-x-1" /></AppLink></Button></Reveal>
         </div>
       </section>
     </>

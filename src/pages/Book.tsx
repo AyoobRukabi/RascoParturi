@@ -1,300 +1,296 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Clock, User, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Card, Notice, Spinner } from "@/components/ui/card";
-import { Checkbox, Field, Input, Textarea } from "@/components/ui/form";
+import { BookingConfirmation, type ConfirmationData } from "@/components/BookingConfirmation";
 import { MonthPicker } from "@/components/MonthPicker";
 import { Query } from "@/components/Query";
+import { Button } from "@/components/ui/button";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/card";
+import { Checkbox, Field, Input, Textarea } from "@/components/ui/form";
 import { useCatalog } from "@/hooks/useCatalog";
-import { ApiError, bookingApi } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { useBookingBackend, type SlotRow } from "@/lib/backend";
 import { serviceName } from "@/lib/catalog";
-import { supabase } from "@/lib/supabase";
-import { addDays, eur, fmtDate, fmtTime, todayInTz } from "@/lib/time";
+import { AppLink } from "@/lib/preview";
+import { addDays, eur, fmtDate, fmtTime, fmtYmd, todayInTz } from "@/lib/time";
 import type { Catalog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type SlotRow = { slot_start: string; barber_ids: string[] };
 const errMsg = (t: (k: string) => string, e: unknown) => {
-  const code = e instanceof ApiError ? e.code : "unknown";
-  const k = `errors.${code}`;
-  const m = t(k);
-  return m === k ? t("errors.unknown") : m;
+  const k = `errors.${e instanceof ApiError ? e.code : "unknown"}`;
+  return t(k) === k ? t("errors.unknown") : t(k);
 };
+interface Details { name: string; phone: string; email: string; notes?: string; website?: string }
 
 export default function Book() {
   const q = useCatalog();
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <Query q={q}>{(d) => <BookingFlow catalog={d} />}</Query>
-    </div>
-  );
+  return <div className="container-x pb-28 pt-10 lg:pb-24 lg:pt-14"><Query q={q} skeleton={<Skeleton className="h-96" />}>{(d) => <BookingFlow catalog={d} />}</Query></div>;
 }
 
 function BookingFlow({ catalog }: { catalog: Catalog }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
+  const backend = useBookingBackend();
+  const [sp] = useSearchParams();
+  const demoState = sp.get("state") ?? "";
   const qc = useQueryClient();
   const s = catalog.settings;
   const tz = s.timezone;
   const services = useMemo(() => catalog.services.filter((x) => x.bookable_online && x.duration_minutes), [catalog.services]);
+  const phoneOnly = catalog.services.filter((x) => !x.bookable_online);
 
   const [step, setStep] = useState(1);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [barberId, setBarberId] = useState<string | null>(null); // uuid or "any"
   const [date, setDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<SlotRow | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ token: string; startsAt: string; emailSent: boolean; email: string } | null>(null);
+  const [details, setDetails] = useState<Details | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<ConfirmationData | null>(null);
 
   const chosen = services.filter((x) => serviceIds.includes(x.id));
   const totalMin = chosen.reduce((a, x) => a + (x.duration_minutes ?? 0), 0);
   const totalPrice = chosen.reduce((a, x) => a + x.price_cents, 0);
   const candidates = catalog.barbers.filter((b) => serviceIds.every((id) => b.service_ids.includes(id)));
   const barberRpc = barberId === "any" ? null : barberId;
-
+  const barberName = barberId === "any" ? t("book.anyBarber") : catalog.barbers.find((b) => b.id === barberId)?.name ?? "";
+  const multi = s.allow_multi_service === true;
   const today = todayInTz(tz);
-  const horizon = Math.min(s.max_days_ahead ?? 30, 62);
-  const maxDate = addDays(today, horizon);
+  const maxDate = addDays(today, Math.min(s.max_days_ahead ?? 30, 62));
+  const barberStepSkipped = candidates.length <= 1;
 
   const datesQ = useQuery({
-    queryKey: ["dates", barberRpc, serviceIds, today, barberId],
-    enabled: step === 3 && barberId !== null,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("available_dates", { p_barber: barberRpc, p_service_ids: serviceIds, p_from: today, p_to: maxDate });
-      if (error) throw error;
-      return new Set<string>(data as string[]);
-    },
+    queryKey: ["dates", backend.isPreview, demoState, barberId, serviceIds, today], enabled: step === 3 && barberId !== null,
+    queryFn: async () => new Set(await backend.fetchDates(barberRpc, serviceIds, today, maxDate)),
   });
   const slotsQ = useQuery({
-    queryKey: ["slots", barberRpc, serviceIds, date, barberId],
-    enabled: step === 3 && barberId !== null && date !== null,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("available_slots", { p_barber: barberRpc, p_service_ids: serviceIds, p_date: date });
-      if (error) throw error;
-      return data as SlotRow[];
-    },
+    queryKey: ["slots", backend.isPreview, demoState, barberId, serviceIds, date], enabled: step === 3 && barberId !== null && date !== null,
+    queryFn: () => backend.fetchSlots(barberRpc, serviceIds, date!),
   });
-
   useEffect(() => { window.scrollTo({ top: 0 }); }, [step]);
+
+  const reset = () => { setDone(null); setStep(1); setServiceIds([]); setBarberId(null); setDate(null); setSlot(null); setDetails(null); setError(null); };
+  const toggleService = (id: string) => {
+    setBarberId(null); setDate(null); setSlot(null); setError(null);
+    setServiceIds((cur) => (multi ? (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]) : [id]));
+  };
+  const goFromServices = () => { if (candidates.length === 1) setBarberId(candidates[0].id); else if (candidates.length === 0) return; setStep(candidates.length === 1 ? 3 : 2); };
 
   if (!s.booking_enabled) {
     return (
-      <Card className="mx-auto max-w-xl text-center">
-        <h1 className="text-4xl font-bold">{t("book.unavailableTitle")}</h1>
-        <p className="mt-2 text-muted">{t("book.unavailableText")}</p>
-        {s.phone && <Button asChild size="lg" className="mt-6"><a href={`tel:${s.phone}`}>{s.phone}</a></Button>}
-      </Card>
+      <div className="mx-auto max-w-xl py-10">
+        <p className="eyebrow mb-4">{t("book.title")}</p>
+        <h1 className="t-h2">{t("book.unavailableTitle")}</h1>
+        <p className="t-lead mt-4">{t("book.unavailableText")}</p>
+        {s.phone && <Button asChild size="lg" className="mt-8"><a href={`tel:${s.phone}`}>{s.phone}</a></Button>}
+      </div>
     );
   }
+  if (done) return <BookingConfirmation d={done} preview={backend.isPreview} onNew={reset} />;
 
-  if (done) {
-    return (
-      <Card className="mx-auto max-w-xl text-center">
-        <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-success/15 text-success"><Check className="size-8" /></div>
-        <h1 className="text-4xl font-bold">{t("book.doneTitle")}</h1>
-        <p className="mt-2 text-muted">{t("book.doneText")}</p>
-        <p className="mt-5 text-xl font-semibold capitalize">{fmtDate(done.startsAt, lng, tz)}, {fmtTime(done.startsAt, lng, tz)}</p>
-        <div className="mt-5">
-          {done.emailSent
-            ? <Notice tone="success">{t("book.emailSent")} <strong>{done.email}</strong></Notice>
-            : <Notice tone="warn">{t("book.emailFailed")}</Notice>}
-        </div>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button asChild><Link to={`/booking/${done.token}`}>{t("book.manageLink")}</Link></Button>
-          <Button variant="outline" onClick={() => { setDone(null); setStep(1); setServiceIds([]); setBarberId(null); setDate(null); setSlot(null); }}>{t("book.newBooking")}</Button>
-        </div>
-      </Card>
-    );
-  }
-
-  const multi = s.allow_multi_service === true;
-  const toggleService = (id: string) => {
-    setBarberId(null); setDate(null); setSlot(null);
-    setServiceIds((cur) => (multi ? (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]) : [id]));
+  const submit = async () => {
+    if (!slot || !details) return;
+    setSubmitting(true); setError(null);
+    try {
+      const res = await backend.create({ service_ids: serviceIds, barber_id: barberRpc, starts_at: slot.slot_start, locale: lng, name: details.name, phone: details.phone, email: details.email, notes: details.notes || null, website: details.website });
+      void qc.invalidateQueries({ queryKey: ["slots"] }); void qc.invalidateQueries({ queryKey: ["dates"] });
+      setDone({ token: res.manage_token, startsAt: res.starts_at ?? slot.slot_start, emailSent: res.email_sent, email: details.email, barber: barberName, services: chosen, totalPrice, totalMinutes: totalMin, tz });
+    } catch (e) {
+      if (e instanceof ApiError && e.code === "slot_unavailable") {
+        void qc.invalidateQueries({ queryKey: ["slots"] }); void qc.invalidateQueries({ queryKey: ["dates"] });
+        setSlot(null); setStep(3); setError(t("book.slotTaken"));
+      } else setError(errMsg(t, e));
+    } finally { setSubmitting(false); }
   };
-  const afterServices = () => {
-    if (candidates.length === 1) { setBarberId(candidates[0].id); setStep(3); } else setStep(2);
-  };
-  const steps = [t("book.s1"), t("book.s2"), t("book.s3"), t("book.s4")];
 
-  const Summary = (
-    <Card className="lg:sticky lg:top-24">
-      <h2 className="mb-3 text-2xl font-bold">{t("book.summary")}</h2>
-      {chosen.length === 0 ? <p className="text-sm text-muted">—</p> : (
-        <ul className="space-y-1.5 text-sm">
-          {chosen.map((x) => <li key={x.id} className="flex justify-between gap-3"><span>{serviceName(x, lng)}</span><span className="tabular-nums text-muted">{eur(x.price_cents, lng)}</span></li>)}
-        </ul>
-      )}
-      {chosen.length > 0 && (
-        <div className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
-          <div className="flex justify-between font-semibold"><span>{t("common.total")}</span><span className="tabular-nums">{eur(totalPrice, lng)}</span></div>
-          <div className="flex justify-between text-muted"><span>{t("common.duration")}</span><span>{totalMin} {t("common.min")}</span></div>
-        </div>
-      )}
-      {barberId && <p className="mt-3 flex items-center gap-2 text-sm text-muted"><User className="size-4" />{barberId === "any" ? t("book.anyBarber") : catalog.barbers.find((b) => b.id === barberId)?.name}</p>}
-      {slot && <p className="mt-2 flex items-center gap-2 text-sm font-medium capitalize"><Clock className="size-4 text-brand-hover" />{fmtDate(slot.slot_start, lng, tz, { weekday: "short", day: "numeric", month: "numeric" })} · {fmtTime(slot.slot_start, lng, tz)}</p>}
-      <p className="mt-4 text-xs text-muted">{t("book.payAtShop")} {t("book.noAccount")}</p>
-    </Card>
+  const steps = [t("book.s1"), t("book.s2"), t("book.s3"), t("book.s4"), t("book.s5")];
+  const back = () => setStep(step === 3 && barberStepSkipped ? 1 : step - 1);
+  const canNext = step === 1 ? serviceIds.length > 0 && candidates.length > 0 : step === 2 ? barberId !== null : step === 3 ? slot !== null : true;
+
+  /* sticky action bar: pinned on mobile, inline on desktop */
+  const Footer = (
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:static lg:mt-12 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+      <div className="container-x flex items-center gap-3 !px-0 lg:!px-0">
+        {step > 1 && <Button variant="outline" size="lg" onClick={back} aria-label={t("common.back")} className="!px-4"><ArrowLeft className="size-5" /><span className="hidden sm:inline">{t("common.back")}</span></Button>}
+        {chosen.length > 0 && step < 5 && <div className="mr-auto min-w-0 lg:hidden"><p className="font-display text-2xl font-semibold leading-none tabular-nums">{eur(totalPrice, lng)}</p><p className="text-xs text-muted">{totalMin} {t("common.min")}</p></div>}
+        {step < 4 && <Button size="lg" disabled={!canNext} onClick={step === 1 ? goFromServices : () => setStep(step + 1)} className="ml-auto flex-1 sm:flex-none lg:ml-0">{t("common.next")} <ArrowRight className="size-5" /></Button>}
+        {step === 4 && <Button size="lg" form="details-form" type="submit" className="ml-auto flex-1 sm:flex-none lg:ml-0">{t("book.reviewBtn")} <ArrowRight className="size-5" /></Button>}
+        {step === 5 && <Button size="lg" disabled={submitting} onClick={submit} className="ml-auto flex-1 sm:flex-none lg:ml-0">{submitting ? <><span className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />{t("book.submitting")}</> : <>{t("book.confirmBtn")} <Check className="size-5" /></>}</Button>}
+      </div>
+    </div>
   );
 
   return (
     <div>
-      <h1 className="pt-2 text-5xl font-bold">{t("book.title")}</h1>
-      <ol className="my-6 flex gap-2" aria-label="Progress">
-        {steps.map((label, i) => (
-          <li key={label} aria-current={step === i + 1 ? "step" : undefined} className={cn("flex-1 border-t-4 pt-2 text-xs font-semibold uppercase tracking-wider sm:text-sm", step >= i + 1 ? "border-brand text-fg" : "border-line text-muted")}>
-            <span className="sm:hidden">{i + 1}</span><span className="hidden sm:inline">{i + 1}. {label}</span>
-          </li>
-        ))}
-      </ol>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div>
-          {step === 1 && (
-            <section>
-              <h2 className="mb-1 text-3xl font-bold">{multi ? t("book.chooseServicesMulti") : t("book.chooseOne")}</h2>
-              <p className="mb-4 text-sm text-muted">{t("book.onlyBookable")}</p>
-              {services.length === 0 ? <Notice>{t("services.empty")}</Notice> : (
-                <ul className="space-y-2">
-                  {services.map((x) => {
-                    const on = serviceIds.includes(x.id);
-                    return (
-                      <li key={x.id}>
-                        <button type="button" onClick={() => toggleService(x.id)} aria-pressed={on}
-                          className={cn("flex w-full items-center justify-between gap-4 rounded-2xl border p-4 text-left transition-colors", on ? "border-brand bg-brand/10" : "border-line bg-surface hover:border-muted")}>
-                          <span className="flex items-center gap-3">
-                            <span className={cn("grid size-6 shrink-0 place-items-center border", multi ? "rounded-md" : "rounded-full", on ? "border-brand bg-brand text-brand-fg" : "border-line")}>{on && <Check className="size-4" />}</span>
-                            <span><span className="block font-semibold">{serviceName(x, lng)}</span><span className="text-sm text-muted">{x.duration_minutes} {t("common.min")}</span></span>
-                          </span>
-                          <span className="font-bold tabular-nums text-brand-hover">{eur(x.price_cents, lng)}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <div className="mt-6"><Button size="lg" disabled={serviceIds.length === 0} onClick={afterServices} className="w-full sm:w-auto">{t("common.next")}</Button></div>
-            </section>
-          )}
+      <p className="eyebrow rise mb-3">{t("book.title")}</p>
+      <nav aria-label="Progress" className="mb-10"><ol className="flex gap-1.5 sm:gap-3">
+        {steps.map((label, i) => {
+          const n = i + 1; const skipped = n === 2 && barberStepSkipped && step > 2;
+          return (
+            <li key={label} aria-current={step === n ? "step" : undefined} className={cn("flex-1", skipped && "opacity-40")}>
+              <div className={cn("h-[3px] transition-colors", step >= n ? "bg-brand" : "bg-line-strong")} />
+              <p className={cn("mt-2 font-display text-[0.8rem] font-semibold uppercase tracking-[0.14em] sm:text-sm", step === n ? "text-fg" : "text-muted")}><span className="sm:hidden">{step === n ? label : n}</span><span className="hidden sm:inline">{n}. {label}</span></p>
+            </li>
+          );
+        })}
+      </ol></nav>
 
-          {step === 2 && (
-            <section>
-              <h2 className="mb-4 text-3xl font-bold">{t("book.chooseBarber")}</h2>
-              <ul className="space-y-2">
-                {s.allow_any_barber && candidates.length > 1 && (
-                  <li><BarberOption selected={barberId === "any"} onClick={() => setBarberId("any")} icon={<Users className="size-5" />} title={t("book.anyBarber")} hint={t("book.anyBarberHint")} /></li>
-                )}
-                {candidates.map((b) => <li key={b.id}><BarberOption selected={barberId === b.id} onClick={() => setBarberId(b.id)} icon={<User className="size-5" />} title={b.name} /></li>)}
+      <div className="grid gap-12 lg:grid-cols-[1fr_21rem] lg:gap-16">
+        <div className="min-w-0">
+        <div key={step} className="rise">
+          {error && step !== 5 && <Notice tone="danger" className="mb-6">{error}</Notice>}
+
+          {step === 1 && (<section aria-labelledby="s1">
+            <h1 id="s1" className="t-h2 mb-2">{multi ? t("book.chooseServicesMulti") : t("book.chooseOne")}</h1>
+            <p className="mb-8 text-muted">{multi ? t("book.multiHint") : ""}</p>
+            {services.length === 0 ? <EmptyState title={t("book.noServicesTitle")} text={t("book.noServicesText")} action={s.phone ? <Button asChild><a href={`tel:${s.phone}`}>{s.phone}</a></Button> : undefined} /> : (
+              <ul className="border-t border-line" role={multi ? "group" : "radiogroup"}>
+                {services.map((x) => { const on = serviceIds.includes(x.id); return (
+                  <li key={x.id} className="border-b border-line">
+                    <button type="button" role={multi ? "checkbox" : "radio"} aria-checked={on} onClick={() => toggleService(x.id)}
+                      className={cn("relative flex w-full items-center gap-4 py-5 pl-4 pr-2 text-left transition-colors hover:bg-surface", on && "bg-surface")}>
+                      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-[3px] transition-colors", on ? "bg-brand" : "bg-transparent")} />
+                      <span aria-hidden className={cn("grid size-6 shrink-0 place-items-center border-2 transition-colors", multi ? "rounded-sm" : "rounded-full", on ? "border-brand bg-brand text-brand-fg" : "border-line-strong")}>{on && <Check className="size-4" strokeWidth={3} />}</span>
+                      <span className="min-w-0 flex-1"><span className="block text-lg font-semibold leading-snug sm:text-xl">{serviceName(x, lng)}</span><span className="text-sm text-muted">{x.duration_minutes} {t("common.min")}</span></span>
+                      <span className="font-display text-3xl font-semibold tabular-nums">{eur(x.price_cents, lng)}</span>
+                    </button>
+                  </li>); })}
               </ul>
-              {candidates.length === 0 && <Notice tone="warn">{t("book.noDates")}</Notice>}
-              <div className="mt-6 flex gap-3"><Button variant="outline" onClick={() => setStep(1)}>{t("common.back")}</Button><Button disabled={!barberId} onClick={() => { setDate(null); setSlot(null); setStep(3); }}>{t("common.next")}</Button></div>
-            </section>
-          )}
+            )}
+            {phoneOnly.length > 0 && services.length > 0 && s.phone && <p className="mt-6 text-sm text-muted">{t("book.onlyBookable")} <a className="font-semibold text-fg underline-offset-4 hover:underline" href={`tel:${s.phone}`}>{s.phone}</a></p>}
+            {serviceIds.length > 0 && candidates.length === 0 && <Notice tone="warn" className="mt-6">{t("book.noBarberForCombo")}</Notice>}
+          </section>)}
 
-          {step === 3 && (
-            <section>
-              <h2 className="mb-4 text-3xl font-bold">{t("book.chooseDate")}</h2>
-              {datesQ.isLoading && <div className="py-10"><Spinner /></div>}
-              {datesQ.isError && <Notice tone="danger">{t("common.loadError")}</Notice>}
-              {datesQ.data && (datesQ.data.size === 0 ? <Notice tone="warn">{t("book.noDates")}</Notice> : (
-                <MonthPicker available={datesQ.data} value={date} minDate={today} maxDate={maxDate} onChange={(d) => { setDate(d); setSlot(null); }} />
-              ))}
-              {date && (
-                <div className="mt-6">
-                  <h3 className="mb-3 font-sans text-lg font-semibold">{t("book.chooseTime")}</h3>
-                  {slotsQ.isLoading && <Spinner />}
-                  {slotsQ.data && slotsQ.data.length === 0 && <Notice>{t("book.noSlotsDay")}</Notice>}
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                    {slotsQ.data?.map((r) => (
-                      <button key={r.slot_start} type="button" onClick={() => setSlot(r)} aria-pressed={slot?.slot_start === r.slot_start}
-                        className={cn("h-11 rounded-xl border text-base font-semibold tabular-nums transition-colors", slot?.slot_start === r.slot_start ? "border-brand bg-brand text-brand-fg" : "border-line bg-surface hover:border-brand")}>
-                        {fmtTime(r.slot_start, lng, tz)}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-xs text-muted">{t("book.timeZoneNote")}</p>
-                </div>
-              )}
-              {formError && <Notice tone="danger" className="mt-4">{formError}</Notice>}
-              <div className="mt-6 flex gap-3">
-                <Button variant="outline" onClick={() => setStep(candidates.length === 1 ? 1 : 2)}>{t("common.back")}</Button>
-                <Button disabled={!slot} onClick={() => { setFormError(null); setStep(4); }}>{t("common.next")}</Button>
-              </div>
-            </section>
-          )}
+          {step === 2 && (<section aria-labelledby="s2">
+            <h1 id="s2" className="t-h2 mb-8">{t("book.chooseBarber")}</h1>
+            <ul className="border-t border-line" role="radiogroup">
+              {s.allow_any_barber && candidates.length > 1 && <li><BarberRow selected={barberId === "any"} onClick={() => setBarberId("any")} index="∗" title={t("book.anyBarber")} hint={t("book.anyBarberHint")} icon /></li>}
+              {candidates.map((b, i) => <li key={b.id}><BarberRow selected={barberId === b.id} onClick={() => setBarberId(b.id)} index={`0${i + 1}`} title={b.name} /></li>)}
+            </ul>
+          </section>)}
 
-          {step === 4 && slot && (
-            <DetailsForm onBack={() => setStep(3)} error={formError}
-              onSubmit={async (v) => {
-                setFormError(null);
-                try {
-                  const res = await bookingApi<{ manage_token: string; starts_at: string; email_sent: boolean }>("create", {
-                    service_ids: serviceIds, barber_id: barberRpc, starts_at: slot.slot_start, locale: lng, name: v.name, phone: v.phone,
-                    email: v.email, notes: v.notes || null, website: v.website,
-                  });
-                  void qc.invalidateQueries({ queryKey: ["slots"] }); void qc.invalidateQueries({ queryKey: ["dates"] });
-                  setDone({ token: res.manage_token, startsAt: res.starts_at ?? slot.slot_start, emailSent: res.email_sent, email: v.email });
-                } catch (e) {
-                  setFormError(e instanceof ApiError && e.code === "slot_unavailable" ? t("book.slotTaken") : errMsg(t, e));
-                  if (e instanceof ApiError && e.code === "slot_unavailable") {
-                    void qc.invalidateQueries({ queryKey: ["slots"] }); void qc.invalidateQueries({ queryKey: ["dates"] });
-                    setSlot(null); setStep(3);
-                  }
-                }
-              }} />
-          )}
+          {step === 3 && (<section aria-labelledby="s3">
+            <h1 id="s3" className="t-h2 mb-8">{t("book.chooseDate")}</h1>
+            {datesQ.isLoading && <div className="space-y-3" aria-busy><Skeleton className="h-8 w-48" /><Skeleton className="h-80" /></div>}
+            {datesQ.isError && <Notice tone="danger">{t("common.loadError")} <button className="underline" onClick={() => void datesQ.refetch()}>{t("common.retry")}</button></Notice>}
+            {datesQ.data && datesQ.data.size === 0 && <EmptyState title={t("book.noDatesTitle")} text={t("book.noDates")} action={<div className="flex flex-wrap justify-center gap-3">{!barberStepSkipped && <Button variant="outline" onClick={() => setStep(2)}>{t("book.changeBarber")}</Button>}{s.phone && <Button asChild><a href={`tel:${s.phone}`}>{s.phone}</a></Button>}</div>} />}
+            {datesQ.data && datesQ.data.size > 0 && (<>
+              {!date && <button className="mb-4 font-display text-[1.05rem] font-semibold uppercase tracking-[0.12em] text-brand-hover hover:text-fg" onClick={() => { setDate([...datesQ.data].sort()[0]); setSlot(null); }}>{t("book.earliest")}: {fmtYmd([...datesQ.data].sort()[0], lng, { weekday: "short", day: "numeric", month: "numeric" })} →</button>}
+              <MonthPicker available={datesQ.data} value={date} minDate={today} maxDate={maxDate} onChange={(d) => { setDate(d); setSlot(null); setError(null); }} />
+              {date && <TimePicker date={date} tz={tz} q={slotsQ} value={slot} onChange={setSlot} />}
+            </>)}
+          </section>)}
+
+          {step === 4 && (<section aria-labelledby="s4">
+            <h1 id="s4" className="t-h2 mb-8">{t("book.yourDetails")}</h1>
+            <DetailsForm initial={details} onSubmit={(v) => { setDetails(v); setStep(5); }} />
+          </section>)}
+
+          {step === 5 && slot && details && (<section aria-labelledby="s5">
+            <h1 id="s5" className="t-h2 mb-8">{t("book.reviewTitle")}</h1>
+            {error && <Notice tone="danger" className="mb-6">{error}</Notice>}
+            <dl className="border-t border-line">
+              <ReviewRow label={t("book.s1")} onEdit={() => setStep(1)}>{chosen.map((x) => <span key={x.id} className="flex justify-between gap-4"><span>{serviceName(x, lng)}</span><span className="tabular-nums text-muted">{eur(x.price_cents, lng)}</span></span>)}</ReviewRow>
+              <ReviewRow label={t("book.s2")} onEdit={barberStepSkipped ? undefined : () => setStep(2)}>{barberName}</ReviewRow>
+              <ReviewRow label={t("book.s3")} onEdit={() => setStep(3)}><span className="capitalize">{fmtDate(slot.slot_start, lng, tz, { weekday: "long", day: "numeric", month: "long" })}</span>, {fmtTime(slot.slot_start, lng, tz)}</ReviewRow>
+              <ReviewRow label={t("book.s4")} onEdit={() => setStep(4)}>{details.name}<br />{details.phone}<br /><span className="break-all">{details.email}</span>{details.notes && <><br /><span className="text-muted">{details.notes}</span></>}</ReviewRow>
+            </dl>
+            <p className="mt-6 text-sm text-muted">{t("book.confirmNote")}</p>
+            {backend.isPreview && <Notice tone="warn" className="mt-4">Design preview: confirming simulates a booking. Nothing is saved or sent.</Notice>}
+          </section>)}
+
         </div>
-        <aside aria-label={t("book.summary")}>{Summary}</aside>
+          {Footer}
+        </div>
+
+        <aside className="hidden lg:block" aria-label={t("book.summary")}>
+          <div className="sticky top-32 border border-line bg-surface p-6">
+            <h2 className="mb-4 text-3xl">{t("book.summary")}</h2>
+            {chosen.length === 0 ? <p className="text-muted">{t("book.summaryEmpty")}</p> : (<>
+              <ul className="space-y-2">{chosen.map((x) => <li key={x.id} className="flex justify-between gap-3"><span>{serviceName(x, lng)}</span><span className="tabular-nums text-muted">{eur(x.price_cents, lng)}</span></li>)}</ul>
+              <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4"><span className="eyebrow !text-muted">{t("common.total")}</span><span className="font-display text-4xl font-semibold tabular-nums">{eur(totalPrice, lng)}</span></div>
+              <p className="text-right text-sm text-muted">{totalMin} {t("common.min")}</p>
+            </>)}
+            {barberId && <p className="mt-5 flex items-center gap-2 text-sm"><Users className="size-4 text-brand-hover" />{barberName}</p>}
+            {slot && <p className="mt-2 text-sm capitalize"><span className="text-brand-hover">●</span> {fmtDate(slot.slot_start, lng, tz, { weekday: "short", day: "numeric", month: "numeric" })} · {fmtTime(slot.slot_start, lng, tz)}</p>}
+            <p className="mt-6 border-t border-line pt-4 text-xs text-muted">{t("book.noPayment")} {t("book.noAccount")}</p>
+          </div>
+        </aside>
       </div>
     </div>
   );
 }
 
-function BarberOption({ selected, onClick, icon, title, hint }: { selected: boolean; onClick: () => void; icon: React.ReactNode; title: string; hint?: string }) {
+function BarberRow({ selected, onClick, index, title, hint, icon }: { selected: boolean; onClick: () => void; index: string; title: string; hint?: string; icon?: boolean }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={selected}
-      className={cn("flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-colors", selected ? "border-brand bg-brand/10" : "border-line bg-surface hover:border-muted")}>
-      <span className="grid size-11 place-items-center rounded-full bg-surface-2 text-brand-hover">{icon}</span>
-      <span><span className="block font-semibold">{title}</span>{hint && <span className="text-sm text-muted">{hint}</span>}</span>
+    <button type="button" role="radio" aria-checked={selected} onClick={onClick} className={cn("relative flex w-full items-center gap-5 border-b border-line py-6 pl-4 pr-2 text-left transition-colors hover:bg-surface", selected && "bg-surface")}>
+      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-[3px]", selected ? "bg-brand" : "bg-transparent")} />
+      <span className="w-8 font-display text-xl font-semibold text-muted">{icon ? <Users className="size-5" /> : index}</span>
+      <span className="flex-1"><span className="block font-display text-3xl font-bold uppercase leading-none">{title}</span>{hint && <span className="mt-1 block text-sm text-muted">{hint}</span>}</span>
+      <span aria-hidden className={cn("grid size-6 place-items-center rounded-full border-2", selected ? "border-brand bg-brand text-brand-fg" : "border-line-strong")}>{selected && <Check className="size-4" strokeWidth={3} />}</span>
     </button>
   );
 }
 
-function DetailsForm({ onSubmit, onBack, error }: {
-  onSubmit: (v: { name: string; phone: string; email: string; notes?: string; website?: string }) => Promise<void>; onBack: () => void; error: string | null;
-}) {
+function TimePicker({ date, tz, q, value, onChange }: { date: string; tz: string; q: { isLoading: boolean; isError: boolean; data?: SlotRow[]; refetch: () => unknown }; value: SlotRow | null; onChange: (s: SlotRow) => void }) {
+  const { t, i18n } = useTranslation();
+  const hourOf = (iso: string) => Number(fmtTime(iso, "en", tz).slice(0, 2));
+  const groups = [["morning", 0, 12], ["afternoon", 12, 17], ["evening", 17, 24]] as const;
+  return (
+    <div className="mt-10" aria-live="polite">
+      <h2 className="mb-5 !text-3xl capitalize">{fmtYmd(date, i18n.language, { weekday: "long", day: "numeric", month: "long" })}</h2>
+      {q.isLoading && <div className="grid grid-cols-3 gap-2 sm:grid-cols-5" aria-busy>{Array.from({ length: 10 }, (_, i) => <Skeleton key={i} className="h-12" />)}</div>}
+      {q.isError && <Notice tone="danger">{t("common.loadError")} <button className="underline" onClick={() => void q.refetch()}>{t("common.retry")}</button></Notice>}
+      {q.data && q.data.length === 0 && <EmptyState title={t("book.noSlotsDay")} text={t("book.noSlotsHint")} />}
+      {q.data && groups.map(([key, from, to]) => { const list = q.data!.filter((r) => hourOf(r.slot_start) >= from && hourOf(r.slot_start) < to); return list.length === 0 ? null : (
+        <div key={key} className="mb-6"><p className="eyebrow !text-muted mb-3">{t(`book.${key}`)}</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5" role="radiogroup" aria-label={t(`book.${key}`)}>
+            {list.map((r) => { const on = value?.slot_start === r.slot_start; return (
+              <button key={r.slot_start} type="button" role="radio" aria-checked={on} onClick={() => onChange(r)}
+                className={cn("h-12 border font-display text-xl font-semibold tabular-nums tracking-wide transition-colors", on ? "border-brand bg-brand text-brand-fg" : "border-line-strong hover:border-fg")}>{fmtTime(r.slot_start, i18n.language, tz)}</button>); })}
+          </div></div>); })}
+      <p className="mt-2 text-xs text-muted">{t("book.timeZoneNote")}</p>
+    </div>
+  );
+}
+
+function ReviewRow({ label, onEdit, children }: { label: string; onEdit?: () => void; children: React.ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <div className="grid grid-cols-[6.5rem_1fr_auto] gap-x-4 border-b border-line py-5 sm:grid-cols-[9rem_1fr_auto]">
+      <dt className="eyebrow !text-muted pt-1">{label}</dt><dd className="min-w-0 space-y-1 text-lg">{children}</dd>
+      {onEdit ? <button onClick={onEdit} className="self-start font-display text-sm font-semibold uppercase tracking-[0.14em] text-brand-hover hover:text-fg">{t("common.edit")}</button> : <span />}
+    </div>
+  );
+}
+
+function DetailsForm({ initial, onSubmit }: { initial: Details | null; onSubmit: (v: Details) => void }) {
   const { t } = useTranslation();
   const schema = useMemo(() => z.object({
     name: z.string().trim().min(1, t("validation.name")).max(100),
     phone: z.string().trim().regex(/^[+0-9 ()-]{5,30}$/, t("validation.phone")),
-    email: z.string().trim().email(t("validation.email")).max(254),
-    notes: z.string().max(500).optional(),
-    website: z.string().optional(),
+    email: z.string().trim().min(1, t("validation.emailRequired")).email(t("validation.email")).max(254),
+    notes: z.string().max(500).optional(), website: z.string().optional(),
     consent: z.literal(true, { errorMap: () => ({ message: t("validation.consent") }) }),
   }), [t]);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: initial ? { ...initial, consent: true as const } : undefined });
   return (
-    <form onSubmit={handleSubmit((v) => onSubmit(v))} noValidate className="space-y-4">
-      <h2 className="text-3xl font-bold">{t("book.yourDetails")}</h2>
-      <Field label={t("book.name")} error={errors.name?.message} htmlFor="name"><Input id="name" autoComplete="name" {...register("name")} /></Field>
-      <Field label={t("book.phone")} error={errors.phone?.message} htmlFor="phone"><Input id="phone" type="tel" autoComplete="tel" inputMode="tel" {...register("phone")} /></Field>
-      <Field label={t("book.email")} hint={t("book.emailHint")} error={errors.email?.message} htmlFor="email"><Input id="email" type="email" autoComplete="email" inputMode="email" {...register("email")} /></Field>
+    <form id="details-form" onSubmit={handleSubmit((v) => onSubmit(v))} noValidate className="max-w-xl space-y-6">
+      <Field label={t("book.name")} error={errors.name?.message} htmlFor="name"><Input id="name" autoComplete="name" aria-invalid={!!errors.name} {...register("name")} /></Field>
+      <Field label={t("book.phone")} error={errors.phone?.message} htmlFor="phone"><Input id="phone" type="tel" autoComplete="tel" inputMode="tel" aria-invalid={!!errors.phone} {...register("phone")} /></Field>
+      <Field label={t("book.email")} hint={t("book.emailHint")} error={errors.email?.message} htmlFor="email"><Input id="email" type="email" autoComplete="email" inputMode="email" aria-invalid={!!errors.email} {...register("email")} /></Field>
       <Field label={t("book.notes")} optional={t("common.optional")} htmlFor="notes"><Textarea id="notes" maxLength={500} {...register("notes")} /></Field>
       {/* Honeypot: invisible to people, tempting to bots */}
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden"><label>Website<input tabIndex={-1} autoComplete="off" {...register("website")} /></label></div>
       <div>
-        <Checkbox {...register("consent")} label={<>{t("book.consent")} <Link className="text-brand-hover underline" to="/privacy" target="_blank">{t("book.privacyLink")}</Link></>} />
-        {errors.consent && <p role="alert" className="mt-1.5 text-sm text-danger">{errors.consent.message}</p>}
-      </div>
-      {error && <Notice tone="danger">{error}</Notice>}
-      <div className="flex gap-3">
-        <Button type="button" variant="outline" onClick={onBack}>{t("common.back")}</Button>
-        <Button type="submit" size="lg" disabled={isSubmitting} className="flex-1 sm:flex-none">{isSubmitting ? t("book.submitting") : t("book.confirmBtn")}</Button>
+        <Checkbox {...register("consent")} label={<>{t("book.consent")} <AppLink className="text-brand-hover underline underline-offset-4" to="/privacy" target="_blank">{t("book.privacyLink")}</AppLink></>} />
+        {errors.consent && <p role="alert" className="mt-2 text-sm text-danger">{errors.consent.message}</p>}
       </div>
     </form>
   );

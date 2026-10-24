@@ -1,25 +1,25 @@
 const fi = {
   brand: { name: "Rasco Parturi-Kampaamo", tagline: "Parturi-kampaamo Helsingissä" },
-  nav: { home: "Etusivu", services: "Palvelut", gallery: "Galleria", contact: "Yhteystiedot", book: "Varaa aika", language: "Kieli", menu: "Valikko", close: "Sulje" },
+  nav: { about: "Meistä", home: "Etusivu", services: "Palvelut", gallery: "Galleria", contact: "Yhteystiedot", book: "Varaa aika", language: "Kieli", menu: "Valikko", close: "Sulje" },
   common: {
     loading: "Ladataan…", back: "Takaisin", next: "Jatka", cancel: "Peruuta", save: "Tallenna", edit: "Muokkaa", delete: "Poista",
     yes: "Kyllä", no: "Ei", min: "min", from: "alk.", total: "Yhteensä", price: "Hinta", duration: "Kesto", optional: "valinnainen",
     callUs: "Soita meille", retry: "Yritä uudelleen", close: "Sulje", none: "Ei yhtään", required: "Pakollinen tieto",
     notConfigured: "Sivuston tietokantayhteyttä ei ole vielä määritetty.", loadError: "Tietojen lataus epäonnistui.",
   },
-  home: {
+  home: { eyebrow: "Parturi-kampaamo · Helsinki", line1: "Siistit häivytykset.", line2: "Helppo varaus.", lead: "Parturi-kampaamo Helsingissä, Helsinginkatu 4 b. Varaa aika verkossa ilman tunnusta.", introEyebrow: "Meistä", introText: "Ammattimainen parturiliike, joka tarjoaa moderneja leikkauksia, siistejä häivytyksiä ja mukavan kokemuksen kaikille.", pillars: ["Kokeneet parturit", "Modernit ja siistit työkalut", "Helppo online-varaus"], more: "Lisää meistä", featuredEyebrow: "Hinnasto", galleryEyebrow: "Galleria", reviewsEyebrow: "Asiakkaat", reviewsTitle: "Sanottua", reviewsPreviewNote: "Suunnittelumerkintä: aidot asiakasarvostelut näytetään tässä, kun ne on toimitettu tiedostossa public/reviews.json. Osio on piilossa julkisella sivustolla, kunnes arvosteluja on.", visitEyebrow: "Vieraile", ctaTitle: "Seuraava leikkaus", ctaTitle2: "on muutaman napautuksen päässä.", today: "Tänään",
     heroTitle: "Tyylikäs leikkaus. Helppo varaus.",
     heroText: "Ammattimainen parturiliike, joka tarjoaa moderneja leikkauksia, siistejä häivytyksiä ja mukavan kokemuksen kaikille.",
     bookCta: "Varaa aika", viewServices: "Katso palvelut",
     chips: ["Modernit leikkaukset", "Siistit häivytykset", "Helppo online-varaus"],
-    servicesTitle: "Palvelut ja hinnat", servicesLead: "Maksu tehdään paikan päällä.", allServices: "Kaikki palvelut",
+    servicesTitle: "Palvelut ja hinnat", servicesLead: "Ajantasaiset hinnat. Verkkomaksua ei tarvita.", allServices: "Kaikki palvelut",
     galleryTitle: "Töitämme", hoursTitle: "Aukioloajat", findUs: "Löydät meidät",
     openNow: "Avoinna nyt", closedNow: "Suljettu nyt", closedDay: "Suljettu",
   },
   days: ["Sunnuntai", "Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai", "Lauantai"],
-  services: { title: "Palvelut ja hinnat", lead: "Hinnat ovat voimassa olevia hintoja. Maksu tehdään paikan päällä.", empty: "Palveluluetteloa ei ole vielä julkaistu.", bookCta: "Varaa aika", phoneOnly: "Varaa puhelimitse" },
-  contact: { title: "Yhteystiedot", address: "Osoite", phone: "Puhelin", email: "Sähköposti", hours: "Aukioloajat", openMap: "Avaa kartta", social: "Seuraa meitä" },
-  book: {
+  services: { emptyText: "Hinnasto julkaistaan pian.", phoneNote: "Joitakin palveluita ei voi vielä varata verkossa – varaa ne puhelimitse.", title: "Palvelut ja hinnat", lead: "Ajantasaiset hinnat. Verkkomaksua ei tarvita.", empty: "Palveluluetteloa ei ole vielä julkaistu.", bookCta: "Varaa aika", phoneOnly: "Varaa puhelimitse" },
+  contact: { directions: "Reittiohjeet", title: "Yhteystiedot", address: "Osoite", phone: "Puhelin", email: "Sähköposti", hours: "Aukioloajat", openMap: "Avaa kartta", social: "Seuraa meitä" },
+  book: { s5: "Yhteenveto", reviewBtn: "Tarkista varaus", reviewTitle: "Tarkista ja vahvista", confirmNote: "Vahvistamalla teet varauksen. Saat vahvistuksen ja linkin ajan peruuttamiseen tai siirtämiseen sähköpostiisi.", multiHint: "Voit yhdistää useita palveluita samaan käyntiin.", noServicesTitle: "Verkossa varattavia palveluita ei ole vielä", noServicesText: "Voit varata ajan soittamalla.", noBarberForCombo: "Yksikään parturi ei tee kaikkia valitsemiasi palveluita. Poista jokin palvelu tai soita meille.", noDatesTitle: "Ei vapaita aikoja", changeBarber: "Vaihda parturia", earliest: "Aikaisin vapaa päivä", morning: "Aamupäivä", afternoon: "Iltapäivä", evening: "Ilta", noSlotsHint: "Valitse toinen päivä.", summaryEmpty: "Valitse palvelu aloittaaksesi.", noPayment: "Verkkomaksua ei tarvita.", doneEyebrow: "Varaus tehty", manageHelp: "Voit peruuttaa tai siirtää aikaasi sähköpostin linkistä.",
     title: "Varaa aika", step: "Vaihe", of: "/",
     s1: "Palvelu", s2: "Parturi", s3: "Aika", s4: "Tiedot",
     chooseServices: "Valitse palvelu", chooseServicesMulti: "Valitse yksi tai useampi palvelu", chooseOne: "Valitse yksi palvelu",
@@ -34,7 +34,7 @@ const fi = {
     doneTitle: "Varaus vahvistettu!", doneText: "Kiitos varauksestasi. Tervetuloa!", emailSent: "Vahvistus ja hallintalinkki on lähetetty osoitteeseen", emailFailed: "Varaus on tehty, mutta vahvistussähköpostin lähetys epäonnistui. Tallenna alla oleva hallintalinkki.", manageLink: "Hallitse varaustasi", newBooking: "Tee uusi varaus", viaBarber: "Parturi",
     slotTaken: "Valitettavasti joku ehti varata tämän ajan. Valitse toinen aika.",
   },
-  manage: {
+  manage: { eyebrow: "Oma varaus", notFoundTitle: "Linkki ei toimi", working: "Hetki…",
     title: "Varauksesi", notFound: "Varausta ei löytynyt tai linkki on vanhentunut.", status: { confirmed: "Vahvistettu", cancelled: "Peruttu", completed: "Toteutunut", no_show: "Ei saapunut" },
     when: "Aika", barber: "Parturi", services: "Palvelut", total: "Yhteensä",
     cancelBtn: "Peruuta varaus", cancelConfirm: "Haluatko varmasti peruuttaa varauksen?", cancelYes: "Kyllä, peruuta", cancelKeep: "Säilytä varaus",
@@ -45,6 +45,8 @@ const fi = {
     deadlineResched: "Voit vaihtaa aikaa viimeistään {{h}} tuntia ennen aikaa.", deadlineReschedZero: "Voit vaihtaa aikaa aloitukseen asti.",
     contactUs: "Ota yhteyttä puhelimitse:",
   },
+  about: { eyebrow: "Helsinki", title: "Meistä", title2: "Rasco Parturi-Kampaamo", pillarText: ["Leikkauksesi ja partasi hoitavat kokeneet parturit.", "Siisti ja ajanmukainen välineistö.", "Valitse palvelu, aika ja parturi verkossa – ilman tunnuksen luomista."], teamEyebrow: "Tiimi", team: "Parturit" },
+  notFound: { title: "Sivua ei löytynyt" },
   privacy: {
     title: "Tietosuojaseloste", draftNotice: "Tämä seloste on luonnos, jonka yrityksen tulee tarkistaa ennen julkaisua. Sitä ei ole vielä oikeudellisesti vahvistettu.",
     controller: "1. Rekisterinpitäjä", controllerText: "Rekisterinpitäjä on", notSet: "[tieto vahvistetaan ennen julkaisua]", businessId: "Y-tunnus", contactPerson: "Tietosuoja-asioiden yhteyshenkilö",
@@ -55,7 +57,7 @@ const fi = {
     rights: "6. Oikeutesi", rightsText: "Sinulla on oikeus saada pääsy tietoihisi, oikaista ja poistaa ne sekä rajoittaa käsittelyä ja vastustaa sitä. Voit myös tehdä valituksen tietosuojavaltuutetun toimistolle. Ota yhteyttä rekisterinpitäjään oikeuksiesi käyttämiseksi.",
     cookies: "7. Evästeet", cookiesText: "Sivusto ei käytä seuranta- tai markkinointievästeitä. Pääkäyttäjän kirjautuminen käyttää selaimen paikallista tallennustilaa vain hallintanäkymässä; kielivalinta tallennetaan selaimeen.",
   },
-  footer: { rights: "Kaikki oikeudet pidätetään.", privacy: "Tietosuojaseloste", admin: "Ylläpito" },
+  footer: { visit: "Käy meillä", rights: "Kaikki oikeudet pidätetään.", privacy: "Tietosuojaseloste", admin: "Ylläpito" },
   errors: {
     slot_unavailable: "Valittu aika ei ole enää vapaana. Valitse toinen aika.", too_many_bookings: "Sinulla on jo useita tulevia varauksia. Ota yhteyttä meihin.",
     booking_not_found: "Varausta ei löytynyt tai linkki on vanhentunut.", not_confirmed: "Varaus ei ole enää vahvistettu.", deadline_passed: "Määräaika on mennyt. Ota yhteyttä meihin.",
@@ -65,7 +67,7 @@ const fi = {
     rate_limited: "Liian monta yritystä. Yritä hetken kuluttua uudelleen.", network_error: "Verkkovirhe. Tarkista yhteytesi ja yritä uudelleen.", internal_error: "Jokin meni pieleen. Yritä uudelleen tai soita meille.",
     unauthorized: "Kirjautuminen vaaditaan.", forbidden: "Ei käyttöoikeutta.", invalid_request: "Virheellinen pyyntö.", unknown: "Jokin meni pieleen. Yritä uudelleen.",
   },
-  validation: { name: "Anna nimi", phone: "Anna puhelinnumero (esim. +358 40 123 4567)", email: "Anna toimiva sähköpostiosoite", consent: "Hyväksyntä vaaditaan" },
+  validation: { emailRequired: "Sähköposti on pakollinen (lähetämme vahvistuksen sinne)", name: "Anna nimi", phone: "Anna puhelinnumero (esim. +358 40 123 4567)", email: "Anna toimiva sähköpostiosoite", consent: "Hyväksyntä vaaditaan" },
   admin: {
     login: "Kirjaudu ylläpitoon", email: "Sähköposti", password: "Salasana", signIn: "Kirjaudu", signOut: "Kirjaudu ulos", wrongLogin: "Väärä sähköposti tai salasana.", notAdmin: "Tällä tunnuksella ei ole ylläpito-oikeuksia.",
     nav: { calendar: "Kalenteri", appointments: "Varaukset", services: "Palvelut", barbers: "Parturit", settings: "Asetukset", emails: "Sähköpostiloki" },

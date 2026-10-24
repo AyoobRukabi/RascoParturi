@@ -32,6 +32,15 @@ supabase/tests/         Database test-suite (runs on a throw-away local PostgreS
 docs/                   Setup guide, launch checklist, security notes
 ```
 
+## Review the design now (no accounts needed)
+
+```bash
+npm install
+npm run dev          # then open http://localhost:5173/preview
+```
+`/preview` shows the redesigned site with **sample data and a simulated booking flow** (clearly bannered; nothing is saved or emailed).
+Use the banner's *Preview pages* menu to jump between pages and states. See [docs/DESIGN.md](docs/DESIGN.md).
+
 ## Develop locally
 
 ```bash

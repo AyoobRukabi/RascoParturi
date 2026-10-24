@@ -2,26 +2,26 @@ import type fi from "./fi";
 
 const en: typeof fi = {
   brand: { name: "Rasco Parturi-Kampaamo", tagline: "Barber shop in Helsinki" },
-  nav: { home: "Home", services: "Services", gallery: "Gallery", contact: "Contact", book: "Book now", language: "Language", menu: "Menu", close: "Close" },
+  nav: { about: "About", home: "Home", services: "Services", gallery: "Gallery", contact: "Contact", book: "Book now", language: "Language", menu: "Menu", close: "Close" },
   common: {
     loading: "Loading…", back: "Back", next: "Continue", cancel: "Cancel", save: "Save", edit: "Edit", delete: "Delete",
     yes: "Yes", no: "No", min: "min", from: "from", total: "Total", price: "Price", duration: "Duration", optional: "optional",
     callUs: "Call us", retry: "Try again", close: "Close", none: "None", required: "Required",
     notConfigured: "The site's database connection has not been configured yet.", loadError: "Could not load data.",
   },
-  home: {
+  home: { eyebrow: "Barber shop · Helsinki", line1: "Clean fades.", line2: "Easy booking.", lead: "Barber shop at Helsinginkatu 4 b, Helsinki. Book online – no account needed.", introEyebrow: "About us", introText: "A professional barber shop offering modern cuts, clean fades and a comfortable experience for everyone.", pillars: ["Experienced barbers", "Modern, clean tools", "Easy online booking"], more: "More about us", featuredEyebrow: "Price list", galleryEyebrow: "Gallery", reviewsEyebrow: "Customers", reviewsTitle: "Kind words", reviewsPreviewNote: "Design note: genuine customer reviews appear here once they are supplied in public/reviews.json. This section stays hidden on the live site until there are some.", visitEyebrow: "Visit", ctaTitle: "Your next cut", ctaTitle2: "is a few taps away.", today: "Today",
     heroTitle: "Sharp cuts. Easy booking.",
     heroText: "A professional barber shop offering modern cuts, clean fades and a comfortable experience for everyone.",
     bookCta: "Book now", viewServices: "See services",
     chips: ["Modern cuts", "Clean fades", "Easy online booking"],
-    servicesTitle: "Services & prices", servicesLead: "Payment is made at the shop.", allServices: "All services",
+    servicesTitle: "Services & prices", servicesLead: "Current prices. No online payment needed.", allServices: "All services",
     galleryTitle: "Our work", hoursTitle: "Opening hours", findUs: "Find us",
     openNow: "Open now", closedNow: "Closed now", closedDay: "Closed",
   },
   days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-  services: { title: "Services & prices", lead: "These are our current prices. Payment is made at the shop.", empty: "The service list has not been published yet.", bookCta: "Book now", phoneOnly: "Book by phone" },
-  contact: { title: "Contact", address: "Address", phone: "Phone", email: "Email", hours: "Opening hours", openMap: "Open map", social: "Follow us" },
-  book: {
+  services: { emptyText: "The price list will be published soon.", phoneNote: "Some services can't be booked online yet – please book them by phone.", title: "Services & prices", lead: "Current prices. No online payment needed.", empty: "The service list has not been published yet.", bookCta: "Book now", phoneOnly: "Book by phone" },
+  contact: { directions: "Directions", title: "Contact", address: "Address", phone: "Phone", email: "Email", hours: "Opening hours", openMap: "Open map", social: "Follow us" },
+  book: { s5: "Review", reviewBtn: "Review booking", reviewTitle: "Review and confirm", confirmNote: "By confirming you make the booking. You'll receive a confirmation and a link to cancel or reschedule by email.", multiHint: "You can combine several services in one visit.", noServicesTitle: "No services can be booked online yet", noServicesText: "You can book by calling us.", noBarberForCombo: "No single barber offers all the services you chose. Remove one or call us.", noDatesTitle: "No free times", changeBarber: "Change barber", earliest: "Earliest available day", morning: "Morning", afternoon: "Afternoon", evening: "Evening", noSlotsHint: "Please choose another day.", summaryEmpty: "Choose a service to begin.", noPayment: "No online payment needed.", doneEyebrow: "Booking made", manageHelp: "You can cancel or reschedule using the link in your confirmation email.",
     title: "Book an appointment", step: "Step", of: "/",
     s1: "Service", s2: "Barber", s3: "Time", s4: "Details",
     chooseServices: "Choose a service", chooseServicesMulti: "Choose one or more services", chooseOne: "Choose one service",
@@ -36,7 +36,7 @@ const en: typeof fi = {
     doneTitle: "Booking confirmed!", doneText: "Thank you for your booking. See you soon!", emailSent: "Confirmation and manage link sent to", emailFailed: "Your booking is made, but the confirmation email could not be sent. Please save the manage link below.", manageLink: "Manage your booking", newBooking: "Make another booking", viaBarber: "Barber",
     slotTaken: "Sorry, someone just booked this time. Please choose another.",
   },
-  manage: {
+  manage: { eyebrow: "Your booking", notFoundTitle: "This link doesn't work", working: "One moment…",
     title: "Your booking", notFound: "Booking not found, or the link has expired.", status: { confirmed: "Confirmed", cancelled: "Cancelled", completed: "Completed", no_show: "No-show" },
     when: "Time", barber: "Barber", services: "Services", total: "Total",
     cancelBtn: "Cancel booking", cancelConfirm: "Are you sure you want to cancel this booking?", cancelYes: "Yes, cancel", cancelKeep: "Keep booking",
@@ -47,6 +47,8 @@ const en: typeof fi = {
     deadlineResched: "You can change the time up to {{h}} hours before the appointment.", deadlineReschedZero: "You can change the time until the appointment starts.",
     contactUs: "Please contact us by phone:",
   },
+  about: { eyebrow: "Helsinki", title: "About", title2: "Rasco Parturi-Kampaamo", pillarText: ["Your cut and beard are looked after by experienced barbers.", "Clean, up-to-date equipment.", "Choose service, time and barber online – no account needed."], teamEyebrow: "Team", team: "Barbers" },
+  notFound: { title: "Page not found" },
   privacy: {
     title: "Privacy policy", draftNotice: "This policy is a draft for the business to review before publication. It has not been legally verified.",
     controller: "1. Data controller", controllerText: "The data controller is", notSet: "[to be confirmed before launch]", businessId: "Business ID (Y-tunnus)", contactPerson: "Privacy contact",
@@ -57,7 +59,7 @@ const en: typeof fi = {
     rights: "6. Your rights", rightsText: "You have the right to access, correct and delete your data, to restrict processing and to object to it. You may also complain to the Finnish Data Protection Ombudsman. Contact the data controller to exercise your rights.",
     cookies: "7. Cookies", cookiesText: "This site does not use tracking or marketing cookies. The admin login uses the browser's local storage only in the admin area; your language choice is stored in the browser.",
   },
-  footer: { rights: "All rights reserved.", privacy: "Privacy policy", admin: "Staff login" },
+  footer: { visit: "Visit", rights: "All rights reserved.", privacy: "Privacy policy", admin: "Staff login" },
   errors: {
     slot_unavailable: "That time is no longer available. Please choose another.", too_many_bookings: "You already have several upcoming bookings. Please contact us.",
     booking_not_found: "Booking not found, or the link has expired.", not_confirmed: "This booking is no longer confirmed.", deadline_passed: "The deadline has passed. Please contact us.",
@@ -67,7 +69,7 @@ const en: typeof fi = {
     rate_limited: "Too many attempts. Please try again shortly.", network_error: "Network error. Check your connection and try again.", internal_error: "Something went wrong. Try again or call us.",
     unauthorized: "Sign-in required.", forbidden: "Not allowed.", invalid_request: "Invalid request.", unknown: "Something went wrong. Please try again.",
   },
-  validation: { name: "Enter your name", phone: "Enter a phone number (e.g. +358 40 123 4567)", email: "Enter a valid email address", consent: "Consent is required" },
+  validation: { emailRequired: "Email is required (we send your confirmation there)", name: "Enter your name", phone: "Enter a phone number (e.g. +358 40 123 4567)", email: "Enter a valid email address", consent: "Consent is required" },
   admin: {
     login: "Sign in to admin", email: "Email", password: "Password", signIn: "Sign in", signOut: "Sign out", wrongLogin: "Wrong email or password.", notAdmin: "This account does not have admin access.",
     nav: { calendar: "Calendar", appointments: "Appointments", services: "Services", barbers: "Barbers", settings: "Settings", emails: "Email log" },

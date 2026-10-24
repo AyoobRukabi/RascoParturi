@@ -1,10 +1,10 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const field = "w-full rounded-xl border border-line bg-surface-2 px-3.5 py-2.5 text-base text-fg placeholder:text-muted/70 focus:border-brand focus:outline-none disabled:opacity-50";
+const field = "w-full rounded-lg border border-line-strong bg-transparent px-3.5 py-2.5 text-base text-fg placeholder:text-muted/60 transition-colors focus:border-brand focus:outline-none aria-[invalid=true]:border-danger disabled:opacity-50";
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(({ className, ...p }, ref) => (
-  <input ref={ref} className={cn(field, "h-11", className)} {...p} />
+  <input ref={ref} className={cn(field, "h-12", className)} {...p} />
 ));
 Input.displayName = "Input";
 
@@ -14,12 +14,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
 Textarea.displayName = "Textarea";
 
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(({ className, ...p }, ref) => (
-  <select ref={ref} className={cn(field, "h-11", className)} {...p} />
+  <select ref={ref} className={cn(field, "h-12 bg-bg", className)} {...p} />
 ));
 Select.displayName = "Select";
 
 export function Label({ className, ...p }: React.LabelHTMLAttributes<HTMLLabelElement>) {
-  return <label className={cn("mb-1.5 block text-sm font-medium text-fg", className)} {...p} />;
+  return <label className={cn("mb-2 block font-display text-sm font-semibold uppercase tracking-[0.16em] text-muted", className)} {...p} />;
 }
 
 export function Field({ label, hint, error, optional, children, htmlFor }: {

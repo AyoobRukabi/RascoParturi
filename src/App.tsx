@@ -1,10 +1,13 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { SiteLayout } from "@/components/layout/SiteLayout";
+import { PreviewShell, SiteLayout } from "@/components/layout/SiteLayout";
+import { PREVIEW_ENABLED } from "@/lib/preview";
+import { PreviewConfirmation } from "@/pages/PreviewConfirmation";
 import { Spinner } from "@/components/ui/card";
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
 import Contact from "@/pages/Contact";
+import About from "@/pages/About";
 import Privacy from "@/pages/Privacy";
 import NotFound from "@/pages/NotFound";
 
@@ -28,12 +31,26 @@ export default function App() {
         <Route element={<SiteLayout />}>
           <Route index element={<Home />} />
           <Route path="services" element={<Services />} />
+          <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="book" element={<Book />} />
           <Route path="booking/:token" element={<Manage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
+        {PREVIEW_ENABLED && (
+          <Route path="preview" element={<PreviewShell />}>
+            <Route index element={<Home />} />
+            <Route path="services" element={<Services />} />
+            <Route path="about" element={<About />} />
+            <Route path="contact" element={<Contact />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="book" element={<Book />} />
+            <Route path="confirmation" element={<PreviewConfirmation />} />
+            <Route path="booking/:token" element={<Manage />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        )}
         <Route path="admin/login" element={<AdminLogin />} />
         <Route path="admin" element={<AdminLayout />}>
           <Route path="calendar" element={<Calendar />} />

@@ -13,3 +13,7 @@ export function isOpenNow(hours: OpeningHour[], tz: string, now = new Date()): b
   const h = hours.find((x) => x.weekday === wd);
   return Boolean(h?.open && h.close && cur >= trimTime(h.open) && cur < trimTime(h.close));
 }
+
+export const directionsUrl = (address: string, custom?: string | null) =>
+  custom ?? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+export const appleMapsUrl = (address: string) => `https://maps.apple.com/?daddr=${encodeURIComponent(address)}`;

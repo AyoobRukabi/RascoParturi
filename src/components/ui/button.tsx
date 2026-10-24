@@ -4,24 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+  "group/btn inline-flex items-center justify-center gap-2.5 whitespace-nowrap font-display font-semibold uppercase tracking-[0.12em] transition-[background-color,border-color,color,transform] duration-200 disabled:pointer-events-none disabled:opacity-40 cursor-pointer active:translate-y-px",
   {
     variants: {
       variant: {
         primary: "bg-brand text-brand-fg hover:bg-brand-hover",
-        outline: "border border-line bg-transparent text-fg hover:bg-surface-2",
+        light: "bg-fg text-bg hover:bg-white",
+        outline: "border border-line-strong bg-transparent text-fg hover:border-fg",
         ghost: "bg-transparent text-fg hover:bg-surface-2",
-        danger: "bg-danger/15 text-danger border border-danger/40 hover:bg-danger/25",
+        danger: "border border-danger/50 bg-transparent text-danger hover:bg-danger/10",
       },
-      size: { sm: "h-9 px-3 text-sm", md: "h-11 px-5 text-base", lg: "h-14 px-8 text-lg" },
+      size: { sm: "h-9 px-4 text-[0.95rem]", md: "h-12 px-6 text-[1.05rem]", lg: "h-14 px-9 text-[1.2rem]" },
     },
     defaultVariants: { variant: "primary", size: "md" },
   },
 );
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
-}
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> { asChild?: boolean }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild, ...props }, ref) => {
   const Comp = asChild ? Slot : "button";
