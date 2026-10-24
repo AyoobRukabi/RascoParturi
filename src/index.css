@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/barlow-condensed/600.css";
+@import "@fontsource/barlow-condensed/700.css";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Inter Variable", ui-sans-serif, sans-serif;
+  --color-bg: #0a0a0b;
+  --color-surface: #131316;
+  --color-surface-2: #1b1b20;
+  --color-line: #2a2a31;
+  --color-fg: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-brand: #2f6bff;
+  --color-brand-hover: #5587ff;
+  --color-brand-fg: #ffffff;
+  --color-danger: #f0605d;
+  --color-success: #3ecf8e;
+  --color-warn: #f5b942;
+  --radius-card: 1rem;
+}
+
+html { color-scheme: dark; scroll-behavior: smooth; }
+body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: 0.01em; }
+:focus-visible { outline: 2px solid var(--color-brand-hover); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-brand) 50%, transparent); }
+
+.pole-stripes {
+  background-image: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in srgb, var(--color-brand) 14%, transparent) 14px 28px);
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }

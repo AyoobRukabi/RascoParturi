@@ -1,0 +1,13 @@
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+
+export default function NotFound() {
+  const { t } = useTranslation();
+  return (
+    <div className="mx-auto max-w-xl px-4 py-24 text-center">
+      <h1 className="text-7xl font-bold">404</h1>
+      <Button asChild className="mt-6"><Link to="/">{t("nav.home")}</Link></Button>
+    </div>
+  );
+}

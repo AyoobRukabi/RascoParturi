@@ -1,0 +1,11 @@
+# Supabase CLI config (https://supabase.com/docs/guides/local-development)
+project_id = "rasco-parturi"
+
+[functions.booking-api]
+verify_jwt = false   # public endpoint: customers have no account; abuse controls are in the function and database
+
+[functions.admin-api]
+verify_jwt = false   # the function verifies the JWT itself and checks the admins table
+
+[functions.send-reminders]
+verify_jwt = false   # protected by the x-cron-secret header
